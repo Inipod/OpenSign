@@ -1,0 +1,8 @@
+# Single-container gateway: Caddy listens on Railway's $PORT.
+:{$PORT} {
+	reverse_proxy 127.0.0.1:3000
+
+	handle_path /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+}

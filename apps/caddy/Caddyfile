@@ -1,0 +1,9 @@
+# Railway gateway: single public URL for frontend + /api/* backend.
+# Set CLIENT_HOST and SERVER_HOST to each service's RAILWAY_PRIVATE_DOMAIN.
+:{$PORT} {
+	reverse_proxy {$CLIENT_HOST}:3000
+
+	handle_path /api/* {
+		reverse_proxy {$SERVER_HOST}:8080
+	}
+}

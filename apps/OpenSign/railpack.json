@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "deploy": {
+    "startCommand": "./entrypoint.sh npm start",
+    "aptPackages": []
+  },
+  "steps": {
+    "build": {
+      "commands": ["...", "npm run build", "sed -i '/<head>/a\\<script src=\"/env.js\"></script>' build/index.html"]
+    }
+  }
+}
