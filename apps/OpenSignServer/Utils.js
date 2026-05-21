@@ -15,7 +15,13 @@ import { parseUploadFile } from './utils/fileUtils.js';
 
 dotenv.config({ quiet: true });
 
-export const cloudServerUrl = 'http://localhost:8080/app';
+const parseMount = process.env.PARSE_MOUNT || '/app';
+
+export function getInternalServerUrl(port = process.env.PORT || 8080) {
+  return process.env.INTERNAL_SERVER_URL || `http://127.0.0.1:${port}${parseMount}`;
+}
+
+export const cloudServerUrl = getInternalServerUrl();
 export const serverAppId = process.env.APP_ID || 'opensign';
 export const appName = 'OpenSign™';
 export const prefillDraftDocWidget = ['date', 'textbox', 'checkbox', 'radio button', 'image'];

@@ -23,7 +23,8 @@ CADDY_PORT="${PORT:-8080}"
 
 echo "Starting OpenSign server on port ${SERVER_PORT}..."
 cd /app/server
-PORT="${SERVER_PORT}" node index.js &
+INTERNAL_SERVER_URL="http://127.0.0.1:${SERVER_PORT}/app" \
+  PORT="${SERVER_PORT}" node index.js &
 SERVER_PID=$!
 
 echo "Starting OpenSign client on port ${CLIENT_PORT}..."

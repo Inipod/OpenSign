@@ -14,7 +14,7 @@ import FSFilesAdapter from '@parse/fs-files-adapter';
 import { app as customRoute } from './cloud/customRoute/customApp.js';
 import { exec } from 'child_process';
 import { createTransport } from 'nodemailer';
-import { appName, cloudServerUrl, serverAppId, smtpenable, smtpsecure, useLocal } from './Utils.js';
+import { appName, getInternalServerUrl, serverAppId, smtpenable, smtpsecure, useLocal } from './Utils.js';
 import { SSOAuth } from './auth/authadapter.js';
 import runDbMigrations from './migrationdb/index.js';
 import { validateSignedLocalUrl } from './cloud/parsefunction/getSignedUrl.js';
@@ -101,6 +101,9 @@ if (smtpenable) {
   }
 }
 const mailsender = smtpenable ? process.env.SMTP_USER_EMAIL : process.env.MAILGUN_SENDER;
+const serverPort = process.env.PORT || 8080;
+const internalServerUrl = getInternalServerUrl(serverPort);
+const publicServerUrl = process.env.SERVER_URL || internalServerUrl;
 export const config = {
   databaseURI:
     process.env.DATABASE_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/dev',
@@ -113,9 +116,9 @@ export const config = {
   maxUploadSize: '100mb',
   masterKey: process.env.MASTER_KEY, //Add your master key here. Keep it secret!
   masterKeyIps: ['0.0.0.0/0', '::/0'], // '::1'
-  serverURL: cloudServerUrl, // Don't forget to change to https if needed
+  serverURL: publicServerUrl,
   verifyUserEmails: false,
-  publicServerURL: process.env.SERVER_URL || cloudServerUrl,
+  publicServerURL: publicServerUrl,
   // Your apps name. This will appear in the subject and body of the emails that are sent.
   appName: appName,
   allowClientClassCreation: false,
@@ -242,22 +245,32 @@ if (!process.env.TESTING) {
   httpServer.listen(port, '0.0.0.0', function () {
     console.log('opensign-server running on port ' + port + '.');
     const isWindows = process.platform === 'win32';
-    // console.log('isWindows', isWindows);
-    runDbMigrations();
-    const migrate = isWindows
-      ? `set APPLICATION_ID=${serverAppId}&& set SERVER_URL=${cloudServerUrl}&& set MASTER_KEY=${process.env.MASTER_KEY}&& npx parse-dbtool migrate`
-      : `APPLICATION_ID=${serverAppId} SERVER_URL=${cloudServerUrl} MASTER_KEY=${process.env.MASTER_KEY} npx parse-dbtool migrate`;
-    exec(migrate, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error: ${error.message}`);
-        return;
-      }
+    const parseMount = process.env.PARSE_MOUNT || '/app';
+    const migrationServerUrl =
+      process.env.INTERNAL_SERVER_URL || `http://127.0.0.1:${port}${parseMount}`;
 
-      if (stderr) {
-        console.error(`Error: ${stderr}`);
-        return;
-      }
-      console.log(`Command output: ${stdout}`);
-    });
+    runDbMigrations();
+
+    const runParseMigrations = () => {
+      console.log(`Running parse-dbtool migrate against ${migrationServerUrl}`);
+      const migrate = isWindows
+        ? `set APPLICATION_ID=${serverAppId}&& set SERVER_URL=${migrationServerUrl}&& set MASTER_KEY=${process.env.MASTER_KEY}&& npx parse-dbtool migrate`
+        : `APPLICATION_ID=${serverAppId} SERVER_URL=${migrationServerUrl} MASTER_KEY=${process.env.MASTER_KEY} npx parse-dbtool migrate`;
+      exec(migrate, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error: ${error.message}`);
+          return;
+        }
+
+        if (stderr) {
+          console.error(`Error: ${stderr}`);
+          return;
+        }
+        console.log(`Command output: ${stdout}`);
+      });
+    };
+
+    // Parse needs a moment to accept HTTP requests after listen().
+    setTimeout(runParseMigrations, 3000);
   });
 }
