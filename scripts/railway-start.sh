@@ -16,18 +16,19 @@ generate_client_env() {
 
 generate_client_env
 
-# Railway injects PORT for the public listener. Save it before child processes
-# inherit the same variable (server + client also read PORT).
+# Internal ports — only Caddy uses Railway's public PORT.
+SERVER_PORT=8081
+CLIENT_PORT=3000
 CADDY_PORT="${PORT:-8080}"
 
-echo "Starting OpenSign server on port 8080..."
+echo "Starting OpenSign server on port ${SERVER_PORT}..."
 cd /app/server
-PORT=8080 node index.js &
+PORT="${SERVER_PORT}" node index.js &
 SERVER_PID=$!
 
-echo "Starting OpenSign client on port 3000..."
+echo "Starting OpenSign client on port ${CLIENT_PORT}..."
 cd /app/client
-PORT=3000 node server.cjs &
+PORT="${CLIENT_PORT}" node server.cjs &
 CLIENT_PID=$!
 
 # Give backends a moment to bind their ports before Caddy proxies traffic.
