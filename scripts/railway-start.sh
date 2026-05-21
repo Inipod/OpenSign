@@ -16,14 +16,18 @@ generate_client_env() {
 
 generate_client_env
 
-echo "Starting OpenSign server..."
+# Railway injects PORT for the public listener. Save it before child processes
+# inherit the same variable (server + client also read PORT).
+CADDY_PORT="${PORT:-8080}"
+
+echo "Starting OpenSign server on port 8080..."
 cd /app/server
-node index.js &
+PORT=8080 node index.js &
 SERVER_PID=$!
 
-echo "Starting OpenSign client..."
+echo "Starting OpenSign client on port 3000..."
 cd /app/client
-node server.cjs &
+PORT=3000 node server.cjs &
 CLIENT_PID=$!
 
 # Give backends a moment to bind their ports before Caddy proxies traffic.
@@ -31,5 +35,5 @@ sleep 2
 
 trap 'kill $SERVER_PID $CLIENT_PID 2>/dev/null' TERM INT
 
-echo "Starting Caddy on port ${PORT:-3001}..."
-exec caddy run --config /app/Caddyfile --adapter caddyfile
+echo "Starting Caddy on port ${CADDY_PORT}..."
+PORT="${CADDY_PORT}" exec caddy run --config /app/Caddyfile --adapter caddyfile

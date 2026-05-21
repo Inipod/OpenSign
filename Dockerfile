@@ -34,8 +34,7 @@ COPY scripts/railway-start.sh railway-start.sh
 RUN chmod +x railway-start.sh
 
 ENV NODE_ENV=production
-ENV PORT=3001
 
-EXPOSE 3001
+EXPOSE 8080
 
 CMD ["./railway-start.sh"]
