@@ -326,17 +326,10 @@ const Forms = (props) => {
       let uploadedUrl = "";
         const parseFile = new Parse.File(
           pdfName,
-          [...pdfBytes],
+          pdfBytes,
           "application/pdf"
         );
-        const response = await parseFile.save({
-          progress: (progressValue, loaded, total) => {
-            if (progressValue !== null) {
-              const percentCompleted = Math.round((loaded * 100) / total);
-              setpercentage(percentCompleted);
-            }
-          }
-        });
+        const response = await parseFile.save();
         if (response.url()) {
           const fileRes = await getSecureUrl(response.url());
           if (fileRes.url) {
@@ -647,17 +640,10 @@ const Forms = (props) => {
         const pdfToSave = new Uint8Array(newArraybuffer);
         const parseFile = new Parse.File(
           name,
-          [...pdfToSave],
+          pdfToSave,
           "application/pdf"
         );
-        await parseFile.save({
-          progress: (progressValue, loaded, total) => {
-            if (progressValue !== null) {
-              const percentCompleted = Math.round((loaded * 100) / total);
-              setpercentage(percentCompleted);
-            }
-          }
-        });
+        await parseFile.save();
         // Retrieve the URL of the uploaded file
         if (parseFile.url()) {
           const fileRes = await getSecureUrl(parseFile.url());
